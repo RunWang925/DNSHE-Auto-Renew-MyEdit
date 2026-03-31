@@ -1,6 +1,7 @@
 import requests
 import json
 import os
+from datetime import datetime
 
 # 从环境变量获取配置
 API_KEY = os.environ.get('DNSHE_API_KEY')
@@ -32,7 +33,7 @@ def main():
         "Content-Type": "application/json"
     }
 
-    # 1. 获取所有子域名 
+    # 1. 获取所有子域名（包含到期时间）
     list_url = f"{BASE_URL}&endpoint=subdomains&action=list"
     try:
         resp = requests.get(list_url, headers=headers)
@@ -43,10 +44,11 @@ def main():
 
     results = []
     
-    # 2. 遍历并续期 
+    # 2. 遍历并续期
     for domain in subdomains:
         domain_id = domain['id']
         full_domain = domain['full_domain']
+        expires_at = domain.get('expires_at', '未知')  # 从列表里直接拿到期时间
         
         renew_url = f"{BASE_URL}&endpoint=subdomains&action=renew"
         payload = {"subdomain_id": domain_id}
@@ -54,12 +56,10 @@ def main():
         try:
             r_resp = requests.post(renew_url, headers=headers, json=payload).json()
 
-            # ==============================================
-            # 【核心新增】判断：未到续期时间 → 显示剩余天数
-            # ==============================================
+            # 判断：未到续期时间 → 显示剩余天数 + 到期时间
             if r_resp.get("error_code") == "renewal_not_yet_available":
                 days = r_resp.get("days_until_window", "未知")
-                results.append(f"⏳ {full_domain}: 还未到续期时间，剩余 {days} 天才能续期")
+                results.append(f"⏳ {full_domain}: 还未到续期时间，剩余 {days} 天才能续期（到期时间：{expires_at}）")
                 continue
 
             # 原来的续期成功判断
