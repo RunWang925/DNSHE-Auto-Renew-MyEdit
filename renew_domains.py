@@ -57,7 +57,7 @@ def main():
                 results.append(f"⏳ {full_domain}：还未到续期时间，剩余 {days} 天")
                 continue
 
-            # 续期成功（按官方文档字段显示）
+            # 续期成功
             if r_resp.get('success'):
                 old_expiry = r_resp.get('previous_expires_at', '未知')
                 new_expiry = r_resp.get('new_expires_at', '未知')
@@ -70,7 +70,8 @@ def main():
             results.append(f"❌ {full_domain}：请求异常")
 
     if results:
-        msg = "\n".join(results)
+        # 最后追加官网地址
+        msg = "\n".join(results) + "\n\n官网地址：https://my.dnshe.com"
         print(msg)
         send_pushplus(msg)
 
