@@ -53,16 +53,26 @@ def main():
         
         try:
             r_resp = requests.post(renew_url, headers=headers, json=payload).json()
+
+            # ==============================================
+            # 【核心新增】判断：未到续期时间 → 显示剩余天数
+            # ==============================================
+            if r_resp.get("error_code") == "renewal_not_yet_available":
+                days = r_resp.get("days_until_window", "未知")
+                results.append(f"⏳ {full_domain}: 还未到续期时间，剩余 {days} 天才能续期")
+                continue
+
+            # 原来的续期成功判断
             if r_resp.get('success'):
-                # 提取新过期时间 [cite: 6]
                 new_expiry = r_resp.get('new_expires_at', '未知')
                 results.append(f"✅ {full_domain}: 续期成功 (新到期: {new_expiry})")
             else:
                 results.append(f"❌ {full_domain}: 续期失败 ({r_resp.get('message', '未知错误')})")
+
         except Exception as e:
             results.append(f"❌ {full_domain}: 请求异常")
 
-    # 3. 汇总消息并推送 [cite: 14]
+    # 3. 汇总消息并推送
     if results:
         message = "\n".join(results)
         print(message)
